@@ -1,0 +1,248 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang2057{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang9\par
+\par
+# Handwritten Digit Recognition using a Simple Neural Network\par
+\par
+## Abstract\par
+This project demonstrates the implementation of a simple feedforward neural network from scratch using NumPy for recognizing handwritten digits. The network is trained on the MNIST dataset, which consists of 28x28 pixel grayscale images of handwritten digits. The primary goal is to understand the basic principles of neural networks and their training process, including forward propagation, backpropagation, and gradient descent.\par
+\par
+## Introduction\par
+Handwritten digit recognition is a classical problem in machine learning and computer vision. The MNIST dataset, which contains images of handwritten digits, is commonly used to benchmark machine learning algorithms. In this project, we implement a two-layer neural network to classify these digits.\par
+\par
+## Dataset\par
+The dataset used in this project consists of training and test sets:\par
+- `train_X.csv` and `train_label.csv` contain the training data and labels.\par
+- `test_X.csv` and `test_label.csv` contain the test data and labels.\par
+\par
+## Implementation\par
+\par
+### Data Loading and Visualization\par
+\par
+First, we load and visualize the dataset.\par
+\par
+```python\par
+import numpy as np\par
+import matplotlib.pyplot as plt\par
+import random\par
+\par
+X_train = np.loadtxt('train_X.csv', delimiter=',').T\par
+Y_train = np.loadtxt('train_label.csv', delimiter=',').T\par
+\par
+X_test = np.loadtxt('test_X.csv', delimiter=',').T\par
+Y_test = np.loadtxt('test_label.csv', delimiter=',').T\par
+\par
+print(X_train.shape)\par
+\par
+index = random.randrange(0, X_train.shape[1])\par
+plt.imshow(X_train[:, index].reshape(28, 28), cmap='gray')\par
+plt.show()\par
+```\par
+\par
+### Activation Functions\par
+\par
+The activation functions used are Tanh, ReLU, and Softmax. Their derivatives are also implemented.\par
+\par
+```python\par
+def tanh(x):\par
+    return np.tanh(x)\par
+\par
+def relu(x):\par
+    return np.maximum(x, 0)\par
+\par
+def softmax(x):\par
+    expX = np.exp(x)\par
+    return expX / np.sum(expX, axis=0)\par
+\par
+def derivative_tanh(x):\par
+    return 1 - np.power(np.tanh(x), 2)\par
+\par
+def derivative_relu(x):\par
+    return np.array(x > 0, dtype=np.float32)\par
+```\par
+\par
+### Parameter Initialization\par
+\par
+We initialize the parameters for the network.\par
+\par
+```python\par
+def initialize_parameters(n_x, n_h, n_y):\par
+    w1 = np.random.randn(n_h, n_x) * 0.01\par
+    b1 = np.zeros((n_h, 1))\par
+    w2 = np.random.randn(n_y, n_h) * 0.01\par
+    b2 = np.zeros((n_y, 1))\par
+    parameters = \{"w1": w1, "b1": b1, "w2": w2, "b2": b2\}\par
+    return parameters\par
+```\par
+\par
+### Forward Propagation\par
+\par
+The forward propagation step calculates the activations for each layer.\par
+\par
+```python\par
+def forward_propagation(x, parameters):\par
+    w1 = parameters['w1']\par
+    b1 = parameters['b1']\par
+    w2 = parameters['w2']\par
+    b2 = parameters['b2']\par
+    \par
+    z1 = np.dot(w1, x) + b1\par
+    a1 = tanh(z1)\par
+    \par
+    z2 = np.dot(w2, a1) + b2\par
+    a2 = softmax(z2)\par
+    \par
+    forward_cache = \{"z1": z1, "a1": a1, "z2": z2, "a2": a2\}\par
+    return forward_cache\par
+```\par
+\par
+### Cost Function\par
+\par
+The cost function calculates the cross-entropy loss.\par
+\par
+```python\par
+def cost_function(a2, y):\par
+    m = y.shape[1]\par
+    cost = -(1/m) * np.sum(y * np.log(a2))\par
+    return cost\par
+```\par
+\par
+### Backward Propagation\par
+\par
+The backward propagation step calculates the gradients for each parameter.\par
+\par
+```python\par
+def backward_prop(x, y, parameters, forward_cache):\par
+    w1 = parameters['w1']\par
+    b1 = parameters['b1']\par
+    w2 = parameters['w2']\par
+    b2 = parameters['b2']\par
+    \par
+    a1 = forward_cache['a1']\par
+    a2 = forward_cache['a2']\par
+    \par
+    m = x.shape[1]\par
+    \par
+    dz2 = a2 - y\par
+    dw2 = (1/m) * np.dot(dz2, a1.T)\par
+    db2 = (1/m) * np.sum(dz2, axis=1, keepdims=True)\par
+    \par
+    dz1 = np.dot(w2.T, dz2) * derivative_tanh(a1)\par
+    dw1 = (1/m) * np.dot(dz1, x.T)\par
+    db1 = (1/m) * np.sum(dz1, axis=1, keepdims=True)\par
+    \par
+    gradients = \{"dw1": dw1, "db1": db1, "dw2": dw2, "db2": db2\}\par
+    return gradients\par
+```\par
+\par
+### Parameter Updates\par
+\par
+The parameters are updated using gradient descent.\par
+\par
+```python\par
+def update_parameters(parameters, gradients, learning_rate):\par
+    w1 = parameters['w1']\par
+    b1 = parameters['b1']\par
+    w2 = parameters['w2']\par
+    b2 = parameters['b2']\par
+    \par
+    dw1 = gradients['dw1']\par
+    db1 = gradients['db1']\par
+    dw2 = gradients['dw2']\par
+    db2 = gradients['db2']\par
+    \par
+    w1 -= learning_rate * dw1\par
+    b1 -= learning_rate * db1\par
+    w2 -= learning_rate * dw2\par
+    b2 -= learning_rate * db2\par
+    \par
+    parameters = \{"w1": w1, "b1": b1, "w2": w2, "b2": b2\}\par
+    return parameters\par
+```\par
+\par
+### Model Training\par
+\par
+The model is trained for a specified number of iterations.\par
+\par
+```python\par
+def model(x, y, n_h, learning_rate, iterations):\par
+    n_x = x.shape[0]\par
+    n_y = y.shape[0]\par
+    cost_list = []\par
+    \par
+    parameters = initialize_parameters(n_x, n_h, n_y)\par
+    \par
+    for i in range(iterations):\par
+        forward_cache = forward_propagation(x, parameters)\par
+        cost = cost_function(forward_cache['a2'], y)\par
+        gradients = backward_prop(x, y, parameters, forward_cache)\par
+        parameters = update_parameters(parameters, gradients, learning_rate)\par
+        cost_list.append(cost)\par
+        if i % (iterations // 10) == 0:\par
+            print("Cost after", i, "iterations is:", cost)\par
+    return parameters, cost_list\par
+\par
+iterations = 500\par
+n_h = 1000\par
+learning_rate = 0.02\par
+Parameters, Cost_list = model(X_train, Y_train, n_h=n_h, learning_rate=learning_rate, iterations=iterations)\par
+```\par
+\par
+### Cost Visualization\par
+\par
+The cost history is plotted to visualize the training progress.\par
+\par
+```python\par
+t = np.arange(0, iterations)\par
+plt.plot(t, Cost_list)\par
+plt.show()\par
+```\par
+\par
+### Accuracy Calculation\par
+\par
+The accuracy of the model on training and test datasets is calculated.\par
+\par
+```python\par
+def accuracy(inp, labels, parameters):\par
+    forward_cache = forward_propagation(inp, parameters)\par
+    a_out = forward_cache['a2']\par
+    a_out = np.argmax(a_out, axis=0)\par
+    labels = np.argmax(labels, axis=0)\par
+    acc = np.mean(a_out == labels) * 100\par
+    return acc\par
+\par
+print("Accuracy of Train Dataset:", accuracy(X_train, Y_train, Parameters), "%")\par
+print("Accuracy of Test Dataset:", round(accuracy(X_test, Y_test, Parameters), 2), "%")\par
+```\par
+\par
+### Prediction on a Random Test Image\par
+\par
+A random test image is visualized, and the model's prediction is displayed.\par
+\par
+```python\par
+idx = int(random.randrange(0, X_test.shape[1]))\par
+plt.imshow(X_test[:, idx].reshape((28, 28)), cmap='gray')\par
+plt.show()\par
+\par
+cache = forward_propagation(X_test[:, idx].reshape(X_test[:, idx].shape[0], 1), Parameters)\par
+a_pred = cache['a2']\par
+a_pred = np.argmax(a_pred, axis=0)\par
+print("Our model says it is:", a_pred[0])\par
+```\par
+\par
+## Results\par
+The neural network achieved an accuracy of 100% on the training dataset and approximately 87.43% on the test dataset. The performance on the test set indicates that the model generalizes well but may still have some room for improvement.\par
+\par
+## Conclusion\par
+This project demonstrates the fundamental concepts and implementation of a simple neural network using NumPy. The step-by-step process of forward propagation, cost calculation, backpropagation, and parameter updates provides a solid foundation for understanding more complex neural networks and deep learning architectures.\par
+\par
+## Future Work\par
+- Experiment with different network architectures, such as adding more hidden layers or using different activation functions.\par
+- Implement regularization techniques like dropout to prevent overfitting.\par
+- Explore more advanced optimization algorithms like Adam or RMSprop.\par
+\par
+---\par
+\par
+This document covers the essential aspects of your project, providing a comprehensive overview of the implementation and results.\par
+}
+ 
